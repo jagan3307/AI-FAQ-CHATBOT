@@ -38,34 +38,29 @@ load_css()
 
 
 # ================================
-# INITIAL STATE SAFETY
+# INITIAL STATE
 # ================================
 st.session_state.setdefault("logged_in", False)
 st.session_state.setdefault("messages", [])
 st.session_state.setdefault("chat_id", None)
 st.session_state.setdefault("theme", "light")
 
-user = supabase.auth.get_user()
 
-if user and user.user:
-    u = user.user
-
-    st.session_state.logged_in = True
-    st.session_state.user = (u.id, u.email)
 # ================================
-# AUTH SESSION RESTORE (FIXED)
+# 🔥 SUPABASE SESSION RESTORE (FIX)
 # ================================
 try:
-    user = supabase.auth.get_user()
+    session = supabase.auth.get_session()
 
-    if user and user.user:
-        u = user.user
+    if session and session.session:
+
+        user = session.session.user
 
         st.session_state.logged_in = True
-        st.session_state.user = (u.id, u.email)
+        st.session_state.user = (user.id, user.email)
 
-except Exception:
-    pass
+except Exception as e:
+    print("Session restore error:", e)
 
 
 # ================================
@@ -117,14 +112,18 @@ else:
     # LOGOUT
     # ============================
     if st.sidebar.button("Logout"):
+
         supabase.auth.sign_out()
         logout_user()
 
     # ============================
-    # BUSINESS FAQ GENERATOR
+    # HEADER
     # ============================
     st.subheader("🤖 AI FAQ Assistant")
 
+    # ============================
+    # BUSINESS FAQ GENERATOR
+    # ============================
     use_business_faq = st.checkbox("💡 Use Business Idea FAQ Generator")
 
     if use_business_faq:
@@ -172,7 +171,7 @@ else:
             st.success("PDF Loaded Successfully!")
 
     # ============================
-    # CHATBOT SECTION
+    # CHATBOT
     # ============================
     st.subheader("💬 AI Chatbot")
 
@@ -195,9 +194,9 @@ else:
 
             title = prompt[:30]
 
-            chat = create_chat(user_id, title)
+            chat_id = create_chat(user_id, title)
 
-            st.session_state.chat_id = chat
+            st.session_state.chat_id = chat_id
 
         save_message(
             st.session_state.chat_id,
