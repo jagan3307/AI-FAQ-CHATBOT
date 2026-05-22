@@ -2,9 +2,10 @@
 __pycache__/
 *.pyc
 
-# Secrets
+# Secrets (DO NOT upload)
 .streamlit/secrets.toml
 secrets.toml
-
-# Environment files
 .env
+
+# System files
+.DS_Store
