@@ -1,20 +1,8 @@
 import streamlit as st
-from database.connection import supabase
+from database.user_db import register_user
 
 
 def signup_page():
-
-    st.markdown(
-        '<h1 class="main-title">🤖 AI FAQ Chatbot</h1>',
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        '<p class="sub-title">Create your account</p>',
-        unsafe_allow_html=True
-    )
-
-    st.markdown('<div class="auth-box">', unsafe_allow_html=True)
 
     st.subheader("Create Account")
 
@@ -25,20 +13,20 @@ def signup_page():
         type="password"
     )
 
-    if st.button("Create Account"):
+    if st.button("Signup"):
 
-        try:
+        user = register_user(
+            email,
+            password
+        )
 
-            supabase.auth.sign_up({
-                "email": email,
-                "password": password
-            })
+        if user:
 
             st.success(
-                "Account Created Successfully"
+                "Signup Successful"
             )
 
-        except Exception:
-            st.error("Signup Failed")
-
-    st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            st.error(
+                "Signup Failed"
+            )

@@ -1,20 +1,9 @@
 import streamlit as st
+from database.user_db import login_user
 from database.connection import supabase
 
 
 def login_page():
-
-    st.markdown(
-        '<h1 class="main-title">🤖 AI FAQ Chatbot</h1>',
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        '<p class="sub-title">AI Assistant with Google Authentication</p>',
-        unsafe_allow_html=True
-    )
-
-    st.markdown('<div class="auth-box">', unsafe_allow_html=True)
 
     st.subheader("Login")
 
@@ -27,39 +16,44 @@ def login_page():
 
     if st.button("Login"):
 
-        try:
+        user = login_user(
+            email,
+            password
+        )
 
-            response = supabase.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
-
-            user = response.user
+        if user:
 
             st.session_state.logged_in = True
+
             st.session_state.user = (
                 user.id,
                 user.email
             )
 
-            st.success("Login Successful")
+            st.success(
+                "Login Successful"
+            )
 
             st.rerun()
 
-        except Exception:
-            st.error("Invalid Email or Password")
+        else:
+            st.error(
+                "Invalid Credentials"
+            )
 
     st.markdown("### OR")
 
     if st.button("🔵 Continue with Google"):
 
         response = supabase.auth.sign_in_with_oauth({
-            "provider": "google"
+            "provider": "google",
+            "options": {
+                "redirect_to":
+                "https://YOUR-APP.streamlit.app"
+            }
         })
 
         st.link_button(
-            "Open Google Login",
+            "Continue with Google",
             response.url
         )
-
-    st.markdown('</div>', unsafe_allow_html=True)

@@ -9,6 +9,7 @@ from ui.chat_ui import display_messages
 from ui.styles import load_css
 
 from utils.session import init_session
+
 from chatbot.pdf_loader import extract_text_from_pdf
 from chatbot.context import set_pdf_context
 
@@ -18,7 +19,10 @@ from database.chat_db import create_chat
 from database.message_db import save_message
 
 from chatbot.faq_generator import generate_faqs_from_idea
-from chatbot.dynamic_faq import parse_faqs, match_faq
+from chatbot.dynamic_faq import parse_faqs
+
+from database.connection import supabase
+
 
 st.set_page_config(
     page_title="AI FAQ Chatbot",
@@ -29,8 +33,37 @@ st.set_page_config(
 init_session()
 load_css()
 
+# =========================================
+# RESTORE SUPABASE SESSION
+# =========================================
+
+try:
+
+    session = supabase.auth.get_session()
+
+    if session and session.session:
+
+        user = session.session.user
+
+        st.session_state.logged_in = True
+
+        st.session_state.user = (
+            user.id,
+            user.email
+        )
+
+except Exception as e:
+    print(e)
+
+# =========================================
+# TITLE
+# =========================================
 
 st.title("🤖 AI FAQ Chatbot")
+
+# =========================================
+# LOGIN / SIGNUP
+# =========================================
 
 if not st.session_state.logged_in:
 
@@ -45,32 +78,50 @@ if not st.session_state.logged_in:
     else:
         signup_page()
 
+# =========================================
+# MAIN APP
+# =========================================
 
 else:
 
     user_id = st.session_state.user[0]
 
     sidebar(user_id)
-    
-    
-    theme_button = st.sidebar.button("🌙 Toggle Dark/Light Mode")
+
+    # =====================================
+    # THEME TOGGLE
+    # =====================================
 
     if "theme" not in st.session_state:
         st.session_state.theme = "light"
 
-    if theme_button:
+    if st.sidebar.button(
+        "🌙 Toggle Dark/Light Mode"
+    ):
+
         if st.session_state.theme == "light":
             st.session_state.theme = "dark"
+
         else:
             st.session_state.theme = "light"
 
         st.rerun()
 
+    # =====================================
+    # LOGOUT
+    # =====================================
+
     if st.sidebar.button("Logout"):
+
+        supabase.auth.sign_out()
+
         logout_user()
 
-    st.subheader("🤖 AI FAQ Assistant")
+    # =====================================
+    # BUSINESS FAQ
+    # =====================================
 
+    st.subheader("🤖 AI FAQ Assistant")
 
     use_business_faq = st.checkbox(
         "💡 Use Business Idea FAQ Generator"
@@ -86,10 +137,12 @@ else:
 
             if idea:
 
-                faq_text = generate_faqs_from_idea(idea)
+                faq_text = generate_faqs_from_idea(
+                    idea
+                )
 
-                st.session_state.dynamic_faqs = parse_faqs(
-                    faq_text
+                st.session_state.dynamic_faqs = (
+                    parse_faqs(faq_text)
                 )
 
                 st.success(
@@ -97,11 +150,15 @@ else:
                 )
 
             else:
-                st.warning("Please enter an idea")
+                st.warning(
+                    "Please enter an idea"
+                )
 
         if "dynamic_faqs" in st.session_state:
 
-            st.subheader("📋 Generated FAQs")
+            st.subheader(
+                "📋 Generated FAQs"
+            )
 
             for faq in st.session_state.dynamic_faqs:
 
@@ -115,6 +172,9 @@ else:
 
                 st.divider()
 
+    # =====================================
+    # PDF OPTION
+    # =====================================
 
     use_pdf = st.checkbox(
         "📄 Use PDF Knowledge Base"
@@ -139,6 +199,9 @@ else:
                 "PDF Loaded Successfully!"
             )
 
+    # =====================================
+    # CHATBOT
+    # =====================================
 
     st.subheader("💬 AI Chatbot")
 
@@ -160,6 +223,7 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
+        # CREATE CHAT
         if st.session_state.chat_id is None:
 
             title = prompt[:30]
@@ -177,6 +241,7 @@ else:
             prompt
         )
 
+        # AI RESPONSE
         with st.chat_message("assistant"):
 
             reply = get_bot_response(

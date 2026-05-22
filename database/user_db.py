@@ -1,46 +1,33 @@
 from database.connection import supabase
-import bcrypt
 
 
-def register_user(username, email, password):
+def register_user(email, password):
 
-    hashed = bcrypt.hashpw(
-        password.encode(),
-        bcrypt.gensalt()
-    ).decode()
+    try:
 
-    data = {
-        "username": username,
-        "email": email,
-        "password": hashed
-    }
+        response = supabase.auth.sign_up({
+            "email": email,
+            "password": password
+        })
 
-    response = supabase.table("users").insert(data).execute()
+        return response.user
 
-    return response
-
-
-def login_user(username, password):
-
-    response = supabase.table("users") \
-        .select("*") \
-        .eq("username", username) \
-        .execute()
-
-    users = response.data
-
-    if len(users) == 0:
+    except Exception as e:
+        print(e)
         return None
 
-    user = users[0]
 
-    if bcrypt.checkpw(
-        password.encode(),
-        user["password"].encode()
-    ):
-        return (
-            user["id"],
-            user["username"]
-        )
+def login_user(email, password):
 
-    return None
+    try:
+
+        response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+
+        return response.user
+
+    except Exception as e:
+        print(e)
+        return None
