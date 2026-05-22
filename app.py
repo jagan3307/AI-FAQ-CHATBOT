@@ -24,6 +24,9 @@ from chatbot.dynamic_faq import parse_faqs
 from database.connection import supabase
 
 
+# ================================
+# PAGE CONFIG
+# ================================
 st.set_page_config(
     page_title="AI FAQ Chatbot",
     page_icon="🤖",
@@ -33,38 +36,41 @@ st.set_page_config(
 init_session()
 load_css()
 
-# =========================================
-# RESTORE SUPABASE SESSION
-# =========================================
 
+# ================================
+# INITIAL STATE SAFETY
+# ================================
+st.session_state.setdefault("logged_in", False)
+st.session_state.setdefault("messages", [])
+st.session_state.setdefault("chat_id", None)
+st.session_state.setdefault("theme", "light")
+
+
+# ================================
+# AUTH SESSION RESTORE (FIXED)
+# ================================
 try:
+    user = supabase.auth.get_user()
 
-    session = supabase.auth.get_session()
-
-    if session and session.session:
-
-        user = session.session.user
+    if user and user.user:
+        u = user.user
 
         st.session_state.logged_in = True
+        st.session_state.user = (u.id, u.email)
 
-        st.session_state.user = (
-            user.id,
-            user.email
-        )
+except Exception:
+    pass
 
-except Exception as e:
-    print(e)
 
-# =========================================
+# ================================
 # TITLE
-# =========================================
-
+# ================================
 st.title("🤖 AI FAQ Chatbot")
 
-# =========================================
-# LOGIN / SIGNUP
-# =========================================
 
+# ================================
+# LOGIN / SIGNUP
+# ================================
 if not st.session_state.logged_in:
 
     menu = st.sidebar.selectbox(
@@ -78,140 +84,95 @@ if not st.session_state.logged_in:
     else:
         signup_page()
 
-# =========================================
-# MAIN APP
-# =========================================
 
+# ================================
+# MAIN APP
+# ================================
 else:
 
     user_id = st.session_state.user[0]
 
     sidebar(user_id)
 
-    # =====================================
+    # ============================
     # THEME TOGGLE
-    # =====================================
+    # ============================
+    if st.sidebar.button("🌙 Toggle Dark/Light Mode"):
 
-    if "theme" not in st.session_state:
-        st.session_state.theme = "light"
-
-    if st.sidebar.button(
-        "🌙 Toggle Dark/Light Mode"
-    ):
-
-        if st.session_state.theme == "light":
-            st.session_state.theme = "dark"
-
-        else:
-            st.session_state.theme = "light"
+        st.session_state.theme = (
+            "dark"
+            if st.session_state.theme == "light"
+            else "light"
+        )
 
         st.rerun()
 
-    # =====================================
+    # ============================
     # LOGOUT
-    # =====================================
-
+    # ============================
     if st.sidebar.button("Logout"):
-
         supabase.auth.sign_out()
-
         logout_user()
 
-    # =====================================
-    # BUSINESS FAQ
-    # =====================================
-
+    # ============================
+    # BUSINESS FAQ GENERATOR
+    # ============================
     st.subheader("🤖 AI FAQ Assistant")
 
-    use_business_faq = st.checkbox(
-        "💡 Use Business Idea FAQ Generator"
-    )
+    use_business_faq = st.checkbox("💡 Use Business Idea FAQ Generator")
 
     if use_business_faq:
 
-        idea = st.text_area(
-            "Enter your business / college idea"
-        )
+        idea = st.text_area("Enter your business / college idea")
 
         if st.button("Generate FAQs"):
 
             if idea:
 
-                faq_text = generate_faqs_from_idea(
-                    idea
-                )
+                faq_text = generate_faqs_from_idea(idea)
 
-                st.session_state.dynamic_faqs = (
-                    parse_faqs(faq_text)
-                )
+                st.session_state.dynamic_faqs = parse_faqs(faq_text)
 
-                st.success(
-                    "FAQs Generated Successfully 🚀"
-                )
+                st.success("FAQs Generated Successfully 🚀")
 
             else:
-                st.warning(
-                    "Please enter an idea"
-                )
+                st.warning("Please enter an idea")
 
         if "dynamic_faqs" in st.session_state:
 
-            st.subheader(
-                "📋 Generated FAQs"
-            )
+            st.subheader("📋 Generated FAQs")
 
             for faq in st.session_state.dynamic_faqs:
 
-                st.markdown(
-                    f"**Q:** {faq['question']}"
-                )
-
-                st.markdown(
-                    f"**A:** {faq['answer']}"
-                )
-
+                st.markdown(f"**Q:** {faq['question']}")
+                st.markdown(f"**A:** {faq['answer']}")
                 st.divider()
 
-    # =====================================
-    # PDF OPTION
-    # =====================================
-
-    use_pdf = st.checkbox(
-        "📄 Use PDF Knowledge Base"
-    )
+    # ============================
+    # PDF UPLOAD
+    # ============================
+    use_pdf = st.checkbox("📄 Use PDF Knowledge Base")
 
     if use_pdf:
 
-        pdf_file = st.file_uploader(
-            "Upload PDF",
-            type=["pdf"]
-        )
+        pdf_file = st.file_uploader("Upload PDF", type=["pdf"])
 
         if pdf_file is not None:
 
-            text = extract_text_from_pdf(
-                pdf_file
-            )
+            text = extract_text_from_pdf(pdf_file)
 
             set_pdf_context(text[:12000])
 
-            st.success(
-                "PDF Loaded Successfully!"
-            )
+            st.success("PDF Loaded Successfully!")
 
-    # =====================================
-    # CHATBOT
-    # =====================================
-
+    # ============================
+    # CHATBOT SECTION
+    # ============================
     st.subheader("💬 AI Chatbot")
 
-    display_messages(
-        st.session_state.messages
-    )
+    display_messages(st.session_state.messages)
 
-    prompt = st.chat_input(
-        "Ask your questions..."
-    )
+    prompt = st.chat_input("Ask your questions...")
 
     if prompt:
 
@@ -228,12 +189,9 @@ else:
 
             title = prompt[:30]
 
-            chat_id = create_chat(
-                user_id,
-                title
-            )
+            chat = create_chat(user_id, title)
 
-            st.session_state.chat_id = chat_id
+            st.session_state.chat_id = chat
 
         save_message(
             st.session_state.chat_id,
