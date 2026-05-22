@@ -38,18 +38,19 @@ def login_page():
     # =========================
     # GOOGLE LOGIN (FIXED)
     # =========================
+    # =========================
+# GOOGLE LOGIN
+# =========================
     if st.button("🔵 Continue with Google"):
 
         response = supabase.auth.sign_in_with_oauth({
             "provider": "google",
             "options": {
-                # MUST be your deployed app URL (NO CODE HERE)
-                "redirect_to": "https://ai-faq-chatbot-007.streamlit.app/"
+                "redirect_to": "https://ai-faq-chatbot-007.streamlit.app"
             }
         })
 
-        # redirect user properly
-        st.markdown(
-            f'<meta http-equiv="refresh" content="0; url={response.url}">',
-            unsafe_allow_html=True
+        st.link_button(
+            "Click here to login with Google",
+            response.url
         )

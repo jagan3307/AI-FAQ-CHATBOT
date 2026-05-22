@@ -1,5 +1,4 @@
 import streamlit as st
-from urllib.parse import urlparse, parse_qs
 
 from auth.login import login_page
 from auth.signup import signup_page
@@ -25,61 +24,37 @@ from chatbot.dynamic_faq import parse_faqs
 from database.connection import supabase
 
 
-# ================================
+# ==========================================
 # PAGE CONFIG
-# ================================
+# ==========================================
 st.set_page_config(
     page_title="AI FAQ Chatbot",
     page_icon="🤖",
     layout="wide"
 )
 
+
+# ==========================================
+# INIT
+# ==========================================
 init_session()
 load_css()
 
 
-# ================================
-# INITIAL STATE
-# ================================
+# ==========================================
+# SESSION STATE
+# ==========================================
 st.session_state.setdefault("logged_in", False)
 st.session_state.setdefault("messages", [])
 st.session_state.setdefault("chat_id", None)
 st.session_state.setdefault("theme", "light")
 
 
-# =========================================================
-# 🔥 OAUTH FIX (MUST BE AT TOP BEFORE LOGIN CHECK)
-# =========================================================
-query_params = st.query_params
-
-if "code" in query_params:
-
-    try:
-        code = query_params["code"]
-
-        session = supabase.auth.exchange_code_for_session(code)
-
-        if session and session.session:
-
-            user = session.session.user
-
-            st.session_state.logged_in = True
-            st.session_state.user = (user.id, user.email)
-
-            # clean URL
-            st.query_params.clear()
-
-            st.rerun()
-
-    except Exception as e:
-        st.error("Google login failed")
-        st.exception(e)
-
-
-# ================================
-# SESSION RESTORE (NORMAL LOGIN)
-# ================================
+# ==========================================
+# RESTORE SUPABASE SESSION
+# ==========================================
 try:
+
     session = supabase.auth.get_session()
 
     if session and session.session:
@@ -87,21 +62,25 @@ try:
         user = session.session.user
 
         st.session_state.logged_in = True
-        st.session_state.user = (user.id, user.email)
 
-except Exception:
-    pass
+        st.session_state.user = (
+            user.id,
+            user.email
+        )
+
+except Exception as e:
+    print(e)
 
 
-# ================================
+# ==========================================
 # TITLE
-# ================================
+# ==========================================
 st.title("🤖 AI FAQ Chatbot")
 
 
-# ================================
-# LOGIN / SIGNUP PAGE
-# ================================
+# ==========================================
+# LOGIN / SIGNUP
+# ==========================================
 if not st.session_state.logged_in:
 
     menu = st.sidebar.selectbox(
@@ -116,16 +95,19 @@ if not st.session_state.logged_in:
         signup_page()
 
 
-# ================================
+# ==========================================
 # MAIN APP
-# ================================
+# ==========================================
 else:
 
     user_id = st.session_state.user[0]
 
+    # SIDEBAR
     sidebar(user_id)
 
-    # THEME
+    # ==========================================
+    # THEME TOGGLE
+    # ==========================================
     if st.sidebar.button("🌙 Toggle Dark/Light Mode"):
 
         st.session_state.theme = (
@@ -136,21 +118,36 @@ else:
 
         st.rerun()
 
+    # ==========================================
     # LOGOUT
+    # ==========================================
     if st.sidebar.button("Logout"):
 
-        supabase.auth.sign_out()
+        try:
+            supabase.auth.sign_out()
+
+        except Exception as e:
+            print(e)
+
         logout_user()
 
+    # ==========================================
     # HEADER
+    # ==========================================
     st.subheader("🤖 AI FAQ Assistant")
 
-    # BUSINESS FAQ
-    use_business_faq = st.checkbox("💡 Use Business Idea FAQ Generator")
+    # ==========================================
+    # BUSINESS FAQ GENERATOR
+    # ==========================================
+    use_business_faq = st.checkbox(
+        "💡 Use Business Idea FAQ Generator"
+    )
 
     if use_business_faq:
 
-        idea = st.text_area("Enter your business / college idea")
+        idea = st.text_area(
+            "Enter your business / college idea"
+        )
 
         if st.button("Generate FAQs"):
 
@@ -158,29 +155,49 @@ else:
 
                 faq_text = generate_faqs_from_idea(idea)
 
-                st.session_state.dynamic_faqs = parse_faqs(faq_text)
+                st.session_state.dynamic_faqs = parse_faqs(
+                    faq_text
+                )
 
-                st.success("FAQs Generated Successfully 🚀")
+                st.success(
+                    "FAQs Generated Successfully 🚀"
+                )
 
             else:
-                st.warning("Please enter an idea")
+                st.warning(
+                    "Please enter an idea"
+                )
 
+        # DISPLAY FAQS
         if "dynamic_faqs" in st.session_state:
 
             st.subheader("📋 Generated FAQs")
 
             for faq in st.session_state.dynamic_faqs:
 
-                st.markdown(f"**Q:** {faq['question']}")
-                st.markdown(f"**A:** {faq['answer']}")
+                st.markdown(
+                    f"**Q:** {faq['question']}"
+                )
+
+                st.markdown(
+                    f"**A:** {faq['answer']}"
+                )
+
                 st.divider()
 
-    # PDF UPLOAD
-    use_pdf = st.checkbox("📄 Use PDF Knowledge Base")
+    # ==========================================
+    # PDF KNOWLEDGE BASE
+    # ==========================================
+    use_pdf = st.checkbox(
+        "📄 Use PDF Knowledge Base"
+    )
 
     if use_pdf:
 
-        pdf_file = st.file_uploader("Upload PDF", type=["pdf"])
+        pdf_file = st.file_uploader(
+            "Upload PDF",
+            type=["pdf"]
+        )
 
         if pdf_file is not None:
 
@@ -188,17 +205,26 @@ else:
 
             set_pdf_context(text[:12000])
 
-            st.success("PDF Loaded Successfully!")
+            st.success(
+                "PDF Loaded Successfully!"
+            )
 
+    # ==========================================
     # CHATBOT
+    # ==========================================
     st.subheader("💬 AI Chatbot")
 
-    display_messages(st.session_state.messages)
+    display_messages(
+        st.session_state.messages
+    )
 
-    prompt = st.chat_input("Ask your questions...")
+    prompt = st.chat_input(
+        "Ask your questions..."
+    )
 
     if prompt:
 
+        # USER MESSAGE
         st.session_state.messages.append({
             "role": "user",
             "content": prompt
@@ -207,25 +233,43 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
+        # CREATE CHAT
         if st.session_state.chat_id is None:
 
             title = prompt[:30]
 
-            chat_id = create_chat(user_id, title)
+            chat_id = create_chat(
+                user_id,
+                title
+            )
 
             st.session_state.chat_id = chat_id
 
-        save_message(st.session_state.chat_id, "user", prompt)
+        # SAVE USER MESSAGE
+        save_message(
+            st.session_state.chat_id,
+            "user",
+            prompt
+        )
 
+        # BOT RESPONSE
         with st.chat_message("assistant"):
 
-            reply = get_bot_response(prompt, st.session_state.messages)
+            reply = get_bot_response(
+                prompt,
+                st.session_state.messages
+            )
 
             st.markdown(reply)
 
+        # SAVE BOT MESSAGE
         st.session_state.messages.append({
             "role": "assistant",
             "content": reply
         })
 
-        save_message(st.session_state.chat_id, "assistant", reply)
+        save_message(
+            st.session_state.chat_id,
+            "assistant",
+            reply
+        )
