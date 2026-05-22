@@ -7,19 +7,14 @@ def login_page():
     st.subheader("Login")
 
     email = st.text_input("Email")
-
-    password = st.text_input(
-        "Password",
-        type="password"
-    )
+    password = st.text_input("Password", type="password")
 
     # =========================
-    # EMAIL LOGIN (SUPABASE ONLY)
+    # EMAIL LOGIN
     # =========================
     if st.button("Login"):
 
         try:
-
             response = supabase.auth.sign_in_with_password({
                 "email": email,
                 "password": password
@@ -28,12 +23,8 @@ def login_page():
             user = response.user
 
             if user:
-
                 st.session_state.logged_in = True
-                st.session_state.user = (
-                    user.id,
-                    user.email
-                )
+                st.session_state.user = (user.id, user.email)
 
                 st.success("Login Successful")
                 st.rerun()
@@ -52,12 +43,13 @@ def login_page():
         response = supabase.auth.sign_in_with_oauth({
             "provider": "google",
             "options": {
-                "redirect_to": "https://ai-faq-chatbot-007.streamlit.app/?code=431d381e-17a2-4a89-9a34-3254845ee916"
+                # MUST be your deployed app URL (NO CODE HERE)
+                "redirect_to": "https://ai-faq-chatbot-007.streamlit.app/"
             }
         })
 
-        # IMPORTANT: no link_button needed
+        # redirect user properly
         st.markdown(
-            f'<a href="{response.url}" target="_self">👉 Continue with Google</a>',
+            f'<meta http-equiv="refresh" content="0; url={response.url}">',
             unsafe_allow_html=True
         )

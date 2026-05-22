@@ -1,4 +1,5 @@
 import streamlit as st
+from urllib.parse import urlparse, parse_qs
 
 from auth.login import login_page
 from auth.signup import signup_page
@@ -46,8 +47,37 @@ st.session_state.setdefault("chat_id", None)
 st.session_state.setdefault("theme", "light")
 
 
+# =========================================================
+# 🔥 OAUTH FIX (MUST BE AT TOP BEFORE LOGIN CHECK)
+# =========================================================
+query_params = st.query_params
+
+if "code" in query_params:
+
+    try:
+        code = query_params["code"]
+
+        session = supabase.auth.exchange_code_for_session(code)
+
+        if session and session.session:
+
+            user = session.session.user
+
+            st.session_state.logged_in = True
+            st.session_state.user = (user.id, user.email)
+
+            # clean URL
+            st.query_params.clear()
+
+            st.rerun()
+
+    except Exception as e:
+        st.error("Google login failed")
+        st.exception(e)
+
+
 # ================================
-# 🔥 SUPABASE SESSION RESTORE (FIX)
+# SESSION RESTORE (NORMAL LOGIN)
 # ================================
 try:
     session = supabase.auth.get_session()
@@ -59,8 +89,8 @@ try:
         st.session_state.logged_in = True
         st.session_state.user = (user.id, user.email)
 
-except Exception as e:
-    print("Session restore error:", e)
+except Exception:
+    pass
 
 
 # ================================
@@ -70,7 +100,7 @@ st.title("🤖 AI FAQ Chatbot")
 
 
 # ================================
-# LOGIN / SIGNUP
+# LOGIN / SIGNUP PAGE
 # ================================
 if not st.session_state.logged_in:
 
@@ -95,9 +125,7 @@ else:
 
     sidebar(user_id)
 
-    # ============================
-    # THEME TOGGLE
-    # ============================
+    # THEME
     if st.sidebar.button("🌙 Toggle Dark/Light Mode"):
 
         st.session_state.theme = (
@@ -108,22 +136,16 @@ else:
 
         st.rerun()
 
-    # ============================
     # LOGOUT
-    # ============================
     if st.sidebar.button("Logout"):
 
         supabase.auth.sign_out()
         logout_user()
 
-    # ============================
     # HEADER
-    # ============================
     st.subheader("🤖 AI FAQ Assistant")
 
-    # ============================
-    # BUSINESS FAQ GENERATOR
-    # ============================
+    # BUSINESS FAQ
     use_business_faq = st.checkbox("💡 Use Business Idea FAQ Generator")
 
     if use_business_faq:
@@ -153,9 +175,7 @@ else:
                 st.markdown(f"**A:** {faq['answer']}")
                 st.divider()
 
-    # ============================
     # PDF UPLOAD
-    # ============================
     use_pdf = st.checkbox("📄 Use PDF Knowledge Base")
 
     if use_pdf:
@@ -170,9 +190,7 @@ else:
 
             st.success("PDF Loaded Successfully!")
 
-    # ============================
     # CHATBOT
-    # ============================
     st.subheader("💬 AI Chatbot")
 
     display_messages(st.session_state.messages)
@@ -189,7 +207,6 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # CREATE CHAT
         if st.session_state.chat_id is None:
 
             title = prompt[:30]
@@ -198,19 +215,11 @@ else:
 
             st.session_state.chat_id = chat_id
 
-        save_message(
-            st.session_state.chat_id,
-            "user",
-            prompt
-        )
+        save_message(st.session_state.chat_id, "user", prompt)
 
-        # AI RESPONSE
         with st.chat_message("assistant"):
 
-            reply = get_bot_response(
-                prompt,
-                st.session_state.messages
-            )
+            reply = get_bot_response(prompt, st.session_state.messages)
 
             st.markdown(reply)
 
@@ -219,8 +228,4 @@ else:
             "content": reply
         })
 
-        save_message(
-            st.session_state.chat_id,
-            "assistant",
-            reply
-        )
+        save_message(st.session_state.chat_id, "assistant", reply)
