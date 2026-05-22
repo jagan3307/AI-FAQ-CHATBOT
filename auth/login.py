@@ -1,5 +1,4 @@
 import streamlit as st
-from database.user_db import login_user
 from database.connection import supabase
 
 
@@ -14,46 +13,51 @@ def login_page():
         type="password"
     )
 
+    # =========================
+    # EMAIL LOGIN (SUPABASE ONLY)
+    # =========================
     if st.button("Login"):
 
-        user = login_user(
-            email,
-            password
-        )
+        try:
 
-        if user:
+            response = supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": password
+            })
 
-            st.session_state.logged_in = True
+            user = response.user
 
-            st.session_state.user = (
-                user.id,
-                user.email
-            )
+            if user:
 
-            st.success(
-                "Login Successful"
-            )
+                st.session_state.logged_in = True
+                st.session_state.user = (
+                    user.id,
+                    user.email
+                )
 
-            st.rerun()
+                st.success("Login Successful")
+                st.rerun()
 
-        else:
-            st.error(
-                "Invalid Credentials"
-            )
+        except Exception as e:
+            st.error("Login Failed")
+            st.exception(e)
 
     st.markdown("### OR")
 
+    # =========================
+    # GOOGLE LOGIN (FIXED)
+    # =========================
     if st.button("🔵 Continue with Google"):
 
         response = supabase.auth.sign_in_with_oauth({
             "provider": "google",
             "options": {
-                "redirect_to":
-                "https://ai-faq-chatbot-007.streamlit.app/"
+                "redirect_to": "https://ai-faq-chatbot-007.streamlit.app"
             }
         })
 
-        st.link_button(
-            "Continue with Google",
-            response.url
+        # IMPORTANT: no link_button needed
+        st.markdown(
+            f'<a href="{response.url}" target="_self">👉 Continue with Google</a>',
+            unsafe_allow_html=True
         )

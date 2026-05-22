@@ -45,7 +45,13 @@ st.session_state.setdefault("messages", [])
 st.session_state.setdefault("chat_id", None)
 st.session_state.setdefault("theme", "light")
 
+user = supabase.auth.get_user()
 
+if user and user.user:
+    u = user.user
+
+    st.session_state.logged_in = True
+    st.session_state.user = (u.id, u.email)
 # ================================
 # AUTH SESSION RESTORE (FIXED)
 # ================================
