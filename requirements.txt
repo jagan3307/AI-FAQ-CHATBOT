@@ -1,10 +1,7 @@
 streamlit
-groq
-python-dotenv
 mysql-connector-python
-bcrypt
-<<<<<<< HEAD
-supabase
-=======
-pypdf
->>>>>>> 6043474b247bb0c6d5dbcd779cd1852d27ca7844
+python-dotenv
+groq
+requests
+google-auth
+google-auth-oauthlib
