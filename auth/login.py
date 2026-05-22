@@ -49,7 +49,7 @@ def login_page():
             "provider": "google",
             "options": {
                 "redirect_to":
-                "https://YOUR-APP.streamlit.app"
+                "https://ai-faq-chatbot-007.streamlit.app/"
             }
         })
 
