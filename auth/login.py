@@ -52,7 +52,7 @@ def login_page():
         response = supabase.auth.sign_in_with_oauth({
             "provider": "google",
             "options": {
-                "redirect_to": "https://ai-faq-chatbot-007.streamlit.app"
+                "redirect_to": "https://ai-faq-chatbot-007.streamlit.app/?code=431d381e-17a2-4a89-9a34-3254845ee916"
             }
         })
 
