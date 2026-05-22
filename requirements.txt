@@ -4,5 +4,6 @@ python-dotenv
 groq
 requests
 supabase
+pypdf
 google-auth
 google-auth-oauthlib
