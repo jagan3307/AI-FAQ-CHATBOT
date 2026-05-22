@@ -3,5 +3,6 @@ mysql-connector-python
 python-dotenv
 groq
 requests
+supabase
 google-auth
 google-auth-oauthlib
