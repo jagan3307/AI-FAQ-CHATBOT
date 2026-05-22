@@ -1,16 +1,10 @@
-# Environment variables
-.env
-
 # Python cache
 __pycache__/
 *.pyc
 
-# Virtual environment
-venv/
-env/
+# Secrets
+.streamlit/secrets.toml
+secrets.toml
 
-# Streamlit cache
-.streamlit/
-
-# OS files
-.DS_Store
+# Environment files
+.env

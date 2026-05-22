@@ -1,35 +1,46 @@
+from database.connection import supabase
 import bcrypt
-from database.connection import get_connection
 
 
 def register_user(username, email, password):
-    conn = get_connection()
-    cursor = conn.cursor()
 
-    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+    hashed = bcrypt.hashpw(
+        password.encode(),
+        bcrypt.gensalt()
+    ).decode()
 
-    try:
-        query = "INSERT INTO users(username,email,password) VALUES(%s,%s,%s)"
-        cursor.execute(query, (username, email, hashed))
-        conn.commit()
-        return True
-    except:
-        return False
+    data = {
+        "username": username,
+        "email": email,
+        "password": hashed
+    }
+
+    response = supabase.table("users").insert(data).execute()
+
+    return response
 
 
 def login_user(username, password):
-    conn = get_connection()
-    cursor = conn.cursor()
 
-    query = "SELECT * FROM users WHERE username=%s"
-    cursor.execute(query, (username,))
+    response = supabase.table("users") \
+        .select("*") \
+        .eq("username", username) \
+        .execute()
 
-    user = cursor.fetchone()
+    users = response.data
 
-    if user:
-        stored_password = user[3].encode() if isinstance(user[3], str) else user[3]
+    if len(users) == 0:
+        return None
 
-        if bcrypt.checkpw(password.encode(), stored_password):
-            return user
+    user = users[0]
+
+    if bcrypt.checkpw(
+        password.encode(),
+        user["password"].encode()
+    ):
+        return (
+            user["id"],
+            user["username"]
+        )
 
     return None

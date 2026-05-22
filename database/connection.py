@@ -1,11 +1,7 @@
-import mysql.connector
-from config.settings import *
+import streamlit as st
+from supabase import create_client
 
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
 
-def get_connection():
-    return mysql.connector.connect(
-        host=MYSQL_HOST,
-        user=MYSQL_USER,
-        password=MYSQL_PASSWORD,
-        database=MYSQL_DATABASE
-    )
+supabase = create_client(url, key)

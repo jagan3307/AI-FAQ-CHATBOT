@@ -1,21 +1,30 @@
-from database.connection import get_connection
+from database.connection import supabase
 
 
 def save_message(chat_id, role, content):
-    conn = get_connection()
-    cursor = conn.cursor()
 
-    query = "INSERT INTO messages(chat_id,role,content) VALUES(%s,%s,%s)"
-    cursor.execute(query, (chat_id, role, content))
-
-    conn.commit()
+    supabase.table("messages").insert({
+        "chat_id": chat_id,
+        "role": role,
+        "content": content
+    }).execute()
 
 
 def get_messages(chat_id):
-    conn = get_connection()
-    cursor = conn.cursor()
 
-    query = "SELECT role,content FROM messages WHERE chat_id=%s"
-    cursor.execute(query, (chat_id,))
+    response = supabase.table("messages") \
+        .select("*") \
+        .eq("chat_id", chat_id) \
+        .order("created_at") \
+        .execute()
 
-    return cursor.fetchall()
+    messages = []
+
+    for msg in response.data:
+
+        messages.append((
+            msg["role"],
+            msg["content"]
+        ))
+
+    return messages

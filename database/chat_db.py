@@ -1,41 +1,45 @@
-from database.connection import get_connection
+from database.connection import supabase
 
 
 def create_chat(user_id, title):
-    conn = get_connection()
-    cursor = conn.cursor()
 
-    query = "INSERT INTO chats(user_id,title) VALUES(%s,%s)"
-    cursor.execute(query, (user_id, title))
+    response = supabase.table("chats").insert({
+        "user_id": user_id,
+        "title": title
+    }).execute()
 
-    conn.commit()
+    return response.data[0]["id"]
 
-    return cursor.lastrowid
+
+def get_user_chats(user_id):
+
+    response = supabase.table("chats") \
+        .select("*") \
+        .eq("user_id", user_id) \
+        .order("created_at", desc=True) \
+        .execute()
+
+    chats = []
+
+    for chat in response.data:
+
+        chats.append((
+            chat["id"],
+            chat["user_id"],
+            chat["title"]
+        ))
+
+    return chats
+
 
 def delete_chat(chat_id):
-    conn = get_connection()
-    cursor = conn.cursor()
 
-    # 1. Delete all messages linked to this chat
-    cursor.execute(
-        "DELETE FROM messages WHERE chat_id = %s",
-        (chat_id,)
-    )
+    supabase.table("messages") \
+        .delete() \
+        .eq("chat_id", chat_id) \
+        .execute()
 
-    # 2. Delete chat from chats table (IMPORTANT: column is "id")
-    cursor.execute(
-        "DELETE FROM chats WHERE id = %s",
-        (chat_id,)
-    )
-
-    conn.commit()
-    conn.close()
-    
-def get_user_chats(user_id):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    query = "SELECT * FROM chats WHERE user_id=%s ORDER BY id DESC"
-    cursor.execute(query, (user_id,))
-
-    return cursor.fetchall()
+    supabase.table("chats") \
+        .delete() \
+        .eq("id", chat_id) \
+        .execute()
