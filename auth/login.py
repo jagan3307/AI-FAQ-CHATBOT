@@ -10,22 +10,18 @@ def login_page():
     st.markdown("""
     <style>
 
-    /* HIDE SIDEBAR */
     section[data-testid="stSidebar"] {
         display: none;
     }
 
-    /* MAIN BACKGROUND */
     .stApp {
         background-color: #f3f4f8;
     }
 
-    /* REMOVE DEFAULT PADDING */
     .block-container {
         padding-top: 2rem;
     }
 
-    /* LOGIN CARD */
     .login-card {
         background: white;
         padding: 45px;
@@ -36,7 +32,6 @@ def login_page():
         box-shadow: 0 4px 30px rgba(0,0,0,0.05);
     }
 
-    /* TITLE */
     .title {
         text-align: center;
         font-size: 52px;
@@ -52,7 +47,6 @@ def login_page():
         margin-bottom: 35px;
     }
 
-    /* INPUT BOX */
     .stTextInput > div > div > input {
         height: 60px;
         border-radius: 18px;
@@ -62,7 +56,6 @@ def login_page():
         background-color: #fafafa;
     }
 
-    /* LOGIN BUTTON */
     .stButton > button {
         width: 100%;
         height: 60px;
@@ -80,29 +73,6 @@ def login_page():
         color: white;
     }
 
-    /* GOOGLE BUTTON */
-    .google-btn {
-        text-align: center;
-        margin-top: 20px;
-    }
-
-    .google-btn a {
-        display: block;
-        text-decoration: none;
-        padding: 16px;
-        border-radius: 18px;
-        border: 1px solid #dcdcdc;
-        color: black;
-        font-size: 22px;
-        font-weight: 500;
-        background: white;
-    }
-
-    .google-btn a:hover {
-        background: #f7f7f7;
-    }
-
-    /* REGISTER */
     .register {
         text-align: center;
         margin-top: 30px;
@@ -133,13 +103,16 @@ def login_page():
     """, unsafe_allow_html=True)
 
     # ==========================================
-    # INPUTS
+    # EMAIL INPUT
     # ==========================================
     email = st.text_input(
         "Email Address",
         placeholder="Enter your email"
     )
 
+    # ==========================================
+    # PASSWORD INPUT
+    # ==========================================
     password = st.text_input(
         "Password",
         type="password",
@@ -158,10 +131,12 @@ def login_page():
 
         try:
 
-            response = supabase.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
+            response = supabase.auth.sign_in_with_password(
+                {
+                    "email": email,
+                    "password": password
+                }
+            )
 
             user = response.user
 
@@ -186,21 +161,25 @@ def login_page():
     # ==========================================
     # GOOGLE LOGIN
     # ==========================================
-    response = supabase.auth.sign_in_with_oauth({
-        "provider": "google",
-        "options": {
-            "redirect_to":
-            "https://ai-faq-chatbot-007.streamlit.app"
-        }
-    })
+    if st.button("Continue with Google"):
 
-    st.markdown(f"""
-    <div class="google-btn">
-        <a href="{response.url}" target="_self">
-            Continue with Google
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
+        response = supabase.auth.sign_in_with_oauth(
+            {
+                "provider": "google",
+                "options": {
+                    "redirect_to":
+                    "https://ai-faq-chatbot-007.streamlit.app"
+                }
+            }
+        )
+
+        st.markdown(
+            f"""
+            <meta http-equiv="refresh"
+            content="0; url={response.url}">
+            """,
+            unsafe_allow_html=True
+        )
 
     # ==========================================
     # REGISTER TEXT

@@ -35,19 +35,26 @@ st.set_page_config(
 
 
 # ==========================================
-# INIT
+# INIT SESSION + CSS
 # ==========================================
 init_session()
 load_css()
 
 
 # ==========================================
-# SESSION STATE
+# DEFAULT SESSION STATES
 # ==========================================
-st.session_state.setdefault("logged_in", False)
-st.session_state.setdefault("messages", [])
-st.session_state.setdefault("chat_id", None)
-st.session_state.setdefault("theme", "light")
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "chat_id" not in st.session_state:
+    st.session_state.chat_id = None
+
+if "theme" not in st.session_state:
+    st.session_state.theme = "light"
 
 
 # ==========================================
@@ -57,29 +64,34 @@ try:
 
     session = supabase.auth.get_session()
 
-    if session and session.session:
+    if session is not None:
 
-        user = session.session.user
+        current_session = session.session
 
-        st.session_state.logged_in = True
+        if current_session is not None:
 
-        st.session_state.user = (
-            user.id,
-            user.email
-        )
+            user = current_session.user
+
+            st.session_state.logged_in = True
+
+            st.session_state.user = (
+                user.id,
+                user.email
+            )
 
 except Exception as e:
-    print(e)
+
+    st.write(e)
 
 
 # ==========================================
-# TITLE
+# APP TITLE
 # ==========================================
 st.title("🤖 AI FAQ Chatbot")
 
 
 # ==========================================
-# LOGIN / SIGNUP
+# LOGIN / SIGNUP PAGE
 # ==========================================
 if not st.session_state.logged_in:
 
@@ -96,13 +108,15 @@ if not st.session_state.logged_in:
 
 
 # ==========================================
-# MAIN APP
+# MAIN APPLICATION
 # ==========================================
 else:
 
     user_id = st.session_state.user[0]
 
+    # ==========================================
     # SIDEBAR
+    # ==========================================
     sidebar(user_id)
 
     # ==========================================
@@ -153,10 +167,12 @@ else:
 
             if idea:
 
-                faq_text = generate_faqs_from_idea(idea)
+                faq_text = generate_faqs_from_idea(
+                    idea
+                )
 
-                st.session_state.dynamic_faqs = parse_faqs(
-                    faq_text
+                st.session_state.dynamic_faqs = (
+                    parse_faqs(faq_text)
                 )
 
                 st.success(
@@ -164,11 +180,14 @@ else:
                 )
 
             else:
+
                 st.warning(
                     "Please enter an idea"
                 )
 
-        # DISPLAY FAQS
+        # ==========================================
+        # DISPLAY GENERATED FAQS
+        # ==========================================
         if "dynamic_faqs" in st.session_state:
 
             st.subheader("📋 Generated FAQs")
@@ -201,9 +220,13 @@ else:
 
         if pdf_file is not None:
 
-            text = extract_text_from_pdf(pdf_file)
+            text = extract_text_from_pdf(
+                pdf_file
+            )
 
-            set_pdf_context(text[:12000])
+            set_pdf_context(
+                text[:12000]
+            )
 
             st.success(
                 "PDF Loaded Successfully!"
@@ -222,18 +245,25 @@ else:
         "Ask your questions..."
     )
 
+    # ==========================================
+    # USER INPUT
+    # ==========================================
     if prompt:
 
         # USER MESSAGE
-        st.session_state.messages.append({
-            "role": "user",
-            "content": prompt
-        })
+        st.session_state.messages.append(
+            {
+                "role": "user",
+                "content": prompt
+            }
+        )
 
         with st.chat_message("user"):
             st.markdown(prompt)
 
+        # ==========================================
         # CREATE CHAT
+        # ==========================================
         if st.session_state.chat_id is None:
 
             title = prompt[:30]
@@ -243,16 +273,22 @@ else:
                 title
             )
 
-            st.session_state.chat_id = chat_id
+            st.session_state.chat_id = (
+                chat_id
+            )
 
+        # ==========================================
         # SAVE USER MESSAGE
+        # ==========================================
         save_message(
             st.session_state.chat_id,
             "user",
             prompt
         )
 
+        # ==========================================
         # BOT RESPONSE
+        # ==========================================
         with st.chat_message("assistant"):
 
             reply = get_bot_response(
@@ -262,11 +298,15 @@ else:
 
             st.markdown(reply)
 
+        # ==========================================
         # SAVE BOT MESSAGE
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": reply
-        })
+        # ==========================================
+        st.session_state.messages.append(
+            {
+                "role": "assistant",
+                "content": reply
+            }
+        )
 
         save_message(
             st.session_state.chat_id,
