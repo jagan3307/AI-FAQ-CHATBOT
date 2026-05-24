@@ -10,6 +10,7 @@ def login_page():
     st.markdown("""
     <style>
 
+    /* HIDE SIDEBAR */
     section[data-testid="stSidebar"] {
         display: none;
     }
@@ -22,6 +23,7 @@ def login_page():
         padding-top: 2rem;
     }
 
+    /* LOGIN CARD */
     .login-card {
         background: white;
         padding: 45px;
@@ -32,6 +34,7 @@ def login_page():
         box-shadow: 0 4px 30px rgba(0,0,0,0.05);
     }
 
+    /* TITLE */
     .title {
         text-align: center;
         font-size: 52px;
@@ -40,6 +43,7 @@ def login_page():
         margin-bottom: 10px;
     }
 
+    /* SUBTITLE */
     .subtitle {
         text-align: center;
         color: #7b7b7b;
@@ -47,6 +51,7 @@ def login_page():
         margin-bottom: 35px;
     }
 
+    /* INPUTS */
     .stTextInput > div > div > input {
         height: 60px;
         border-radius: 18px;
@@ -56,6 +61,7 @@ def login_page():
         background-color: #fafafa;
     }
 
+    /* LOGIN BUTTON */
     .stButton > button {
         width: 100%;
         height: 60px;
@@ -63,7 +69,7 @@ def login_page():
         border: none;
         background: linear-gradient(90deg,#5b5cf0,#6c63ff);
         color: white;
-        font-size: 24px;
+        font-size: 22px;
         font-weight: 600;
         margin-top: 15px;
     }
@@ -73,6 +79,14 @@ def login_page():
         color: white;
     }
 
+    /* GOOGLE BUTTON */
+    div[data-testid="stButton"] button[kind="secondary"] {
+        background: white !important;
+        color: black !important;
+        border: 1px solid #dadce0 !important;
+    }
+
+    /* REGISTER */
     .register {
         text-align: center;
         margin-top: 30px;
@@ -119,6 +133,9 @@ def login_page():
         placeholder="Enter your password"
     )
 
+    # ==========================================
+    # SHOW PASSWORD
+    # ==========================================
     show_password = st.checkbox("Show Password")
 
     if show_password:
@@ -129,57 +146,87 @@ def login_page():
     # ==========================================
     if st.button("Login"):
 
+        if not email or not password:
+
+            st.warning("Please enter email and password")
+
+        else:
+
+            try:
+
+                response = supabase.auth.sign_in_with_password(
+                    {
+                        "email": email,
+                        "password": password
+                    }
+                )
+
+                user = response.user
+
+                if user:
+
+                    st.session_state.logged_in = True
+
+                    st.session_state.user = (
+                        user.id,
+                        user.email
+                    )
+
+                    st.success("Login Successful ✅")
+
+                    st.rerun()
+
+            except Exception as e:
+
+                st.error("Invalid Email or Password")
+                st.exception(e)
+
+    # ==========================================
+    # DIVIDER
+    # ==========================================
+    st.markdown("""
+    <div style='text-align:center;
+                margin-top:25px;
+                margin-bottom:10px;
+                color:gray;
+                font-size:18px;'>
+        OR
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ==========================================
+    # GOOGLE LOGIN BUTTON
+    # ==========================================
+    google_login = st.button(
+        "🔵 Continue with Google",
+        use_container_width=True,
+        type="secondary"
+    )
+
+    if google_login:
+
         try:
 
-            response = supabase.auth.sign_in_with_password(
+            response = supabase.auth.sign_in_with_oauth(
                 {
-                    "email": email,
-                    "password": password
+                    "provider": "google",
+                    "options": {
+                        "redirect_to":
+                        "http://localhost:8501"
+                    }
                 }
             )
 
-            user = response.user
-
-            if user:
-
-                st.session_state.logged_in = True
-
-                st.session_state.user = (
-                    user.id,
-                    user.email
-                )
-
-                st.success("Login Successful ✅")
-
-                st.rerun()
+            st.link_button(
+                "👉 Click Here to Login with Google",
+                response.url,
+                use_container_width=True
+            )
 
         except Exception as e:
 
-            st.error("Invalid Email or Password")
+            st.error("Google Login Failed")
             st.exception(e)
-
-    # ==========================================
-    # GOOGLE LOGIN
-    # ==========================================
-    if st.button("Continue with Google"):
-
-        response = supabase.auth.sign_in_with_oauth(
-            {
-                "provider": "google",
-                "options": {
-                    "redirect_to":
-                    "https://ai-faq-chatbot-007.streamlit.app"
-                }
-            }
-        )
-
-        st.markdown(
-            f"""
-            <meta http-equiv="refresh"
-            content="0; url={response.url}">
-            """,
-            unsafe_allow_html=True
-        )
 
     # ==========================================
     # REGISTER TEXT
